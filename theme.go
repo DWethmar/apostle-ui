@@ -37,6 +37,7 @@ type Theme struct {
 	ButtonBackground color.Color
 	ButtonHover      color.Color
 	ButtonPressed    color.Color
+	ButtonSelected   color.Color // a button marked with SetSelected
 	ButtonText       color.Color
 	ButtonDisabled   color.Color // label color of a disabled button
 
@@ -66,6 +67,7 @@ func DefaultTheme() Theme {
 		ButtonBackground: color.RGBA{0x3a, 0x3a, 0x46, 0xff},
 		ButtonHover:      color.RGBA{0x50, 0x50, 0x62, 0xff},
 		ButtonPressed:    color.RGBA{0x2a, 0x2a, 0x33, 0xff},
+		ButtonSelected:   color.RGBA{0x4a, 0x78, 0x46, 0xff},
 		ButtonText:       color.RGBA{0xf0, 0xf0, 0xf0, 0xff},
 		ButtonDisabled:   color.RGBA{0x80, 0x80, 0x88, 0xff},
 

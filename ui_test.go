@@ -395,3 +395,42 @@ func TestTitleFace(t *testing.T) {
 		t.Fatalf("TitleFace should make the title taller: %d vs %d", after, before)
 	}
 }
+
+func TestPlaceAt(t *testing.T) {
+	u := newTestUI()
+	p := NewPanel(NewText("popup")).Width(100)
+	u.PlaceAt(p, 50, 60)
+	u.HandleInput(Input{})
+	if got := p.Bounds().Min; got != image.Pt(50, 60) {
+		t.Fatalf("at %v, want (50,60)", got)
+	}
+	if p.Bounds().Dx() != 100 {
+		t.Fatalf("width %d, want 100: PlaceAt should not shrink the element", p.Bounds().Dx())
+	}
+
+	// Near the edge it is pushed back on screen, keeping its size.
+	u.PlaceAt(p, 300, 230)
+	u.HandleInput(Input{})
+	if r := p.Bounds(); r.Max.X != 320 || r.Max.Y != 240 || r.Dx() != 100 {
+		t.Fatalf("%v should end at the screen corner and stay 100 wide", r)
+	}
+
+	// Switching to an anchor drops the fixed point.
+	u.Place(p, TopLeft, 0, 0)
+	u.HandleInput(Input{})
+	if got := p.Bounds().Min; got != image.Pt(0, 0) {
+		t.Fatalf("at %v after Place, want (0,0)", got)
+	}
+}
+
+func TestSelectedButtonStillClicks(t *testing.T) {
+	u := newTestUI()
+	n := 0
+	b := NewButton("Tool", func() { n++ }).SetSelected(true)
+	u.Place(b, TopLeft, 0, 0)
+	u.HandleInput(Input{})
+	click(u, b.Bounds())
+	if !b.Selected() || n != 1 {
+		t.Fatalf("selected = %v, clicks = %d", b.Selected(), n)
+	}
+}

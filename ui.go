@@ -51,6 +51,18 @@ type placement struct {
 	anchor  Anchor
 	marginX int
 	marginY int
+	at      *image.Point // set by PlaceAt: a fixed top-left corner instead of an anchor
+}
+
+func (u *UI) placementOf(e Element) *placement {
+	for _, p := range u.placed {
+		if p.el == e {
+			return p
+		}
+	}
+	p := &placement{el: e}
+	u.placed = append(u.placed, p)
+	return p
 }
 
 // New creates a UI with the default theme.
@@ -62,13 +74,18 @@ func New() *UI {
 // the anchored edges; for a centered axis they shift it right or down.
 // Placing an element that is already placed moves it.
 func (u *UI) Place(e Element, a Anchor, marginX, marginY int) {
-	for _, p := range u.placed {
-		if p.el == e {
-			p.anchor, p.marginX, p.marginY = a, marginX, marginY
-			return
-		}
-	}
-	u.placed = append(u.placed, &placement{el: e, anchor: a, marginX: marginX, marginY: marginY})
+	p := u.placementOf(e)
+	p.anchor, p.marginX, p.marginY, p.at = a, marginX, marginY, nil
+}
+
+// PlaceAt puts e on the screen with its top-left corner at (x, y), moved
+// inward if it would stick out past an edge. Use it for things that follow a
+// point, like a popup next to a character; call it every frame as the point
+// moves. Elements are drawn in the order they were first placed.
+func (u *UI) PlaceAt(e Element, x, y int) {
+	p := u.placementOf(e)
+	at := image.Pt(x, y)
+	p.at = &at
 }
 
 // Remove takes a placed element off the screen.
@@ -236,9 +253,14 @@ func (u *UI) layout() {
 		if p.el.base().hidden {
 			continue
 		}
-		maxW := u.screen.X - 2*p.marginX
-		size := p.el.measure(th, maxW)
-		pos := p.anchor.position(size, u.screen, p.marginX, p.marginY)
+		var size, pos image.Point
+		if p.at != nil {
+			size = p.el.measure(th, u.screen.X)
+			pos = image.Pt(clamp(p.at.X, 0, u.screen.X-size.X), clamp(p.at.Y, 0, u.screen.Y-size.Y))
+		} else {
+			size = p.el.measure(th, u.screen.X-2*p.marginX)
+			pos = p.anchor.position(size, u.screen, p.marginX, p.marginY)
+		}
 		p.el.arrange(th, image.Rectangle{Min: pos, Max: pos.Add(size)})
 	}
 	for _, m := range u.modals {

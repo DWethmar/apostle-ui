@@ -13,6 +13,7 @@ type Button struct {
 	label    string
 	onClick  func()
 	disabled bool
+	selected bool
 }
 
 // NewButton creates a button. onClick may be nil.
@@ -28,6 +29,13 @@ func (b *Button) Label() string { return b.label }
 
 // SetDisabled greys the button out and stops it reacting to clicks.
 func (b *Button) SetDisabled(d bool) *Button { b.disabled = d; return b }
+
+// SetSelected marks the button as the chosen one, e.g. the active tool in a
+// toolbar. It is drawn in the theme's ButtonSelected color.
+func (b *Button) SetSelected(s bool) *Button { b.selected = s; return b }
+
+// Selected reports whether the button is marked as selected.
+func (b *Button) Selected() bool { return b.selected }
 
 // Disabled reports whether the button is disabled.
 func (b *Button) Disabled() bool { return b.disabled }
@@ -49,6 +57,8 @@ func (b *Button) draw(th *Theme, dst *ebiten.Image, st *drawState) {
 		fg = th.ButtonDisabled
 	case hover && st.pressed == b:
 		bg = th.ButtonPressed
+	case b.selected:
+		bg = th.ButtonSelected
 	case hover:
 		bg = th.ButtonHover
 	}

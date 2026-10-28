@@ -87,7 +87,7 @@ over a button or clickable span, e.g. to show a hand cursor.
 | Text | `NewText(s)` | Wraps to the width it is given. `SetText`, `Color`, `Font`, `Align`. |
 | Rich text | `NewRichText(spans...)` | A `Text` made of spans. `SetSpans`, `Add`. |
 | Span | `NewSpan(s)` | Part of a rich text. `SetText`, `Color`, `Font`, `Highlight`, `OnClick`. |
-| Button | `NewButton(label, fn)` | Fires on press + release over it. `SetLabel`, `SetDisabled`. |
+| Button | `NewButton(label, fn)` | Fires on press + release over it. `SetLabel`, `SetDisabled`, `SetSelected` (e.g. the active tool). |
 | Panel | `NewPanel(children...)` | Background and border; children top to bottom. `Width`, `Padding`, `Gap`, `Align`. |
 | Column / Row | `Column(...)`, `Row(...)` | Layout without a box. `Gap`, `Width`, `Align`, `Justify`. |
 | Modal | `NewModal(title, children...)` | Open with `u.Open`. `AddButton`, `OnClose`, `Dismissible`, `Width`, `Close`. |
@@ -96,7 +96,9 @@ Every element has `SetVisible`, `Visible` and `Bounds`. Hidden elements take no
 space.
 
 Anchors for `Place`: `TopLeft`, `Top`, `TopRight`, `Left`, `Middle`, `Right`,
-`BottomLeft`, `Bottom`, `BottomRight`.
+`BottomLeft`, `Bottom`, `BottomRight`. To pin something to a point instead, such
+as a popup next to a character, call `PlaceAt(e, x, y)` every frame; it is
+kept on screen.
 
 Keys: **Escape** closes the top modal, **Enter** presses its first button.
 
