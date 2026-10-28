@@ -4,11 +4,14 @@
 package main
 
 import (
+	"bytes"
 	"image/color"
 	"log"
 	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 
 	ui "github.com/dwethmar/apostle-ui"
 )
@@ -21,6 +24,16 @@ var (
 	darkRed   = color.RGBA{0x5a, 0x16, 0x16, 0xff}
 )
 
+// pixelFont is Press Start 2P, which ships with Ebitengine's examples, at a
+// given size. It is crisp at multiples of 8.
+func pixelFont(size float64) text.Face {
+	src, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.PressStart2P_ttf))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return &text.GoTextFace{Source: src, Size: size}
+}
+
 type game struct {
 	ui   *ui.UI
 	gold *ui.Span
@@ -30,6 +43,10 @@ type game struct {
 func newGame() *game {
 	g := &game{ui: ui.New()}
 	u := g.ui
+	u.Theme.TitleFace = pixelFont(8) // every modal title
+
+	// A text element with its own font.
+	u.Place(ui.NewText("APOSTLE").Font(pixelFont(16)).Color(goldColor), ui.Top, 0, 12)
 
 	// A HUD panel; the gold amount is its own span so it can have a color.
 	g.gold = ui.NewSpan("0").Color(goldColor)
@@ -40,7 +57,7 @@ func newGame() *game {
 
 	// A menu of buttons.
 	u.Place(ui.NewPanel(
-		ui.NewText("Menu").Align(ui.Center),
+		ui.NewText("Menu").Font(pixelFont(8)).Align(ui.Center),
 		ui.NewButton("Show message", g.showNote),
 		ui.NewButton("Leave the cave", g.askToLeave),
 		ui.NewButton("Find gold", func() { g.coin += 10 }),
@@ -54,7 +71,7 @@ func newGame() *game {
 func (g *game) showNote() {
 	g.ui.Open(ui.NewModal("A note", ui.NewRichText(
 		ui.NewSpan("Someone scratched words into the wall: \"The "),
-		ui.NewSpan("eclipse").Color(bloodRed).Highlight(darkRed),
+		ui.NewSpan("ECLIPSE").Font(pixelFont(8)).Color(bloodRed).Highlight(darkRed),
 		ui.NewSpan(" comes for those who seek it.\" The letters are old, but the "),
 		ui.NewSpan("blood").OnClick(func() {
 			g.ui.Alert("Blood", "Still wet. Whoever wrote this is close.")

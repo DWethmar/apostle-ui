@@ -1,9 +1,13 @@
 package ui
 
 import (
+	"bytes"
 	"image"
 	"strings"
 	"testing"
+
+	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
 )
 
 func newTestUI() *UI {
@@ -23,7 +27,7 @@ func click(u *UI, r image.Rectangle) bool {
 // lineTexts lays out spans and returns each line's text.
 func lineTexts(th *Theme, maxW int, spans ...*Span) []string {
 	var out []string
-	for _, l := range layoutText(th, spans, maxW) {
+	for _, l := range layoutText(spans, th.Face, maxW) {
 		var b strings.Builder
 		for _, r := range l.runs {
 			b.WriteString(r.text)
@@ -61,7 +65,7 @@ func TestLayoutAcrossSpans(t *testing.T) {
 
 	// Neighbouring pieces of one span merge into one run, spaces included.
 	key := NewSpan("rusty old key")
-	lines := layoutText(&th, []*Span{NewSpan("a "), key, NewSpan(" here")}, 0)
+	lines := layoutText([]*Span{NewSpan("a "), key, NewSpan(" here")}, th.Face, 0)
 	if n := len(lines[0].runs); n != 3 {
 		t.Fatalf("runs = %d, want 3 (plain, key, plain)", n)
 	}
@@ -81,7 +85,7 @@ func TestClickableSpan(t *testing.T) {
 	var keyRect image.Rectangle
 	for _, r := range txt.lines[0].runs {
 		if r.span == key {
-			keyRect = txt.runRect(&u.Theme, 0, r)
+			keyRect = txt.runRect(0, r)
 		}
 	}
 	if keyRect.Empty() {
@@ -321,5 +325,73 @@ func TestRowJustifyEnd(t *testing.T) {
 	u.HandleInput(Input{})
 	if b.Bounds().Max.X != row.Bounds().Max.X {
 		t.Fatalf("button ends at %d, row at %d", b.Bounds().Max.X, row.Bounds().Max.X)
+	}
+}
+
+// bigFace is a 24px font, twice the height of the default 12px one.
+func bigFace(t *testing.T) text.Face {
+	t.Helper()
+	src, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.PressStart2P_ttf))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &text.GoTextFace{Source: src, Size: 24}
+}
+
+func TestTextFont(t *testing.T) {
+	th := DefaultTheme()
+	big := bigFace(t)
+	plain := NewText("Apostle").measure(&th, 0)
+	sized := NewText("Apostle").Font(big).measure(&th, 0)
+	if sized.X <= plain.X || sized.Y <= plain.Y {
+		t.Fatalf("a bigger font should make bigger text: %v vs %v", sized, plain)
+	}
+}
+
+func TestSpanFontSharesBaseline(t *testing.T) {
+	th := DefaultTheme()
+	big := bigFace(t)
+	lines := layoutText([]*Span{NewSpan("small "), NewSpan("BIG").Font(big), NewSpan(" small")}, th.Face, 0)
+	if len(lines) != 1 {
+		t.Fatalf("lines = %d, want 1", len(lines))
+	}
+	l := lines[0]
+	bigAscent := ceil(big.Metrics().HAscent)
+	if l.baseline != max(bigAscent, ceil(th.Face.Metrics().HAscent)) {
+		t.Errorf("baseline %d should be the tallest ascent", l.baseline)
+	}
+	if l.height < ceil(big.Metrics().HAscent+big.Metrics().HDescent) {
+		t.Errorf("line height %d is shorter than the big font", l.height)
+	}
+	if got := l.runs[1]; got.face != big || got.text != "BIG" {
+		t.Errorf("middle run = %q, want BIG in the big font", got.text)
+	}
+}
+
+func TestLinesStackByTheirOwnHeight(t *testing.T) {
+	th := DefaultTheme()
+	big := bigFace(t)
+	lines := layoutText([]*Span{NewSpan("one\n"), NewSpan("TWO").Font(big), NewSpan("\nthree")}, th.Face, 0)
+	if len(lines) != 3 {
+		t.Fatalf("lines = %d, want 3", len(lines))
+	}
+	if lines[1].height <= lines[0].height {
+		t.Fatalf("the big line should be taller: %d vs %d", lines[1].height, lines[0].height)
+	}
+	if lines[2].y != lines[1].y+lines[1].height {
+		t.Fatalf("line 3 at y=%d, want %d", lines[2].y, lines[1].y+lines[1].height)
+	}
+}
+
+func TestTitleFace(t *testing.T) {
+	u := newTestUI()
+	m := u.Open(NewModal("Title", NewText("body")))
+	u.HandleInput(Input{})
+	before := m.title.Bounds().Dy()
+
+	u.Theme.TitleFace = bigFace(t)
+	u.HandleInput(Input{})
+	if after := m.title.Bounds().Dy(); after <= before {
+		t.Fatalf("TitleFace should make the title taller: %d vs %d", after, before)
 	}
 }

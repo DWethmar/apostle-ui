@@ -8,7 +8,7 @@ A small UI package for [Ebitengine](https://ebitengine.org/) games, made for
 - **Modals**: dialogs in the middle of the screen that take all input until
   they close.
 
-![A modal in the demo with a highlighted word and a clickable one](docs/demo.png)
+![A modal in the demo with mixed fonts, a highlighted word and a clickable one](docs/demo.png)
 
 ```sh
 go get github.com/dwethmar/apostle-ui
@@ -84,9 +84,9 @@ over a button or clickable span, e.g. to show a hand cursor.
 
 | Element | Made with | Notes |
 |---|---|---|
-| Text | `NewText(s)` | Wraps to the width it is given. `SetText`, `Color`, `Align`. |
+| Text | `NewText(s)` | Wraps to the width it is given. `SetText`, `Color`, `Font`, `Align`. |
 | Rich text | `NewRichText(spans...)` | A `Text` made of spans. `SetSpans`, `Add`. |
-| Span | `NewSpan(s)` | Part of a rich text. `SetText`, `Color`, `Highlight`, `OnClick`. |
+| Span | `NewSpan(s)` | Part of a rich text. `SetText`, `Color`, `Font`, `Highlight`, `OnClick`. |
 | Button | `NewButton(label, fn)` | Fires on press + release over it. `SetLabel`, `SetDisabled`. |
 | Panel | `NewPanel(children...)` | Background and border; children top to bottom. `Width`, `Padding`, `Gap`, `Align`. |
 | Column / Row | `Column(...)`, `Row(...)` | Layout without a box. `Gap`, `Width`, `Align`, `Justify`. |
@@ -106,9 +106,26 @@ Everything uses `u.Theme`: font, padding, gap, the widest a modal may grow, and
 all colors. The default font is a 12px bitmap font. To use your own:
 
 ```go
-u.Theme.Face = myFace // any text/v2 Face
+u.Theme.Face = myFace       // any text/v2 Face
+u.Theme.TitleFace = bigFace // modal titles (nil means Face)
 u.Theme.Title = color.RGBA{0xff, 0x80, 0x80, 0xff}
 ```
+
+Fonts can also be set per text, or per span for a single word:
+
+```go
+ui.NewText("APOSTLE").Font(bigFace)
+
+ui.NewRichText(
+	ui.NewSpan("The "),
+	ui.NewSpan("ECLIPSE").Font(pixelFace),
+	ui.NewSpan(" is coming."),
+)
+```
+
+A span's font wins over its text's font, which wins over the theme. Spans of
+different sizes on one line share a baseline, and the line is as tall as its
+tallest font. Buttons use the theme's `Face`.
 
 ## Wrapping
 

@@ -2,7 +2,6 @@ package ui
 
 import (
 	"image/color"
-	"math"
 
 	"github.com/hajimehoshi/bitmapfont/v4"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -11,8 +10,11 @@ import (
 // Theme is the look shared by every element: font, spacing and colors.
 // Change fields on UI.Theme to restyle everything at once.
 type Theme struct {
-	// Face is the font used for all text.
+	// Face is the font for all text and buttons. Text and Span can override it
+	// with Font.
 	Face text.Face
+	// TitleFace is the font for modal titles. Nil means Face.
+	TitleFace text.Face
 
 	// Padding is the space between a panel's or modal's edge and its content.
 	Padding int
@@ -71,13 +73,11 @@ func DefaultTheme() Theme {
 	}
 }
 
-// lineHeight is the vertical advance of one line of text.
+// lineHeight is the height of one line in the theme's font.
 func (th *Theme) lineHeight() int {
 	m := th.Face.Metrics()
-	return int(math.Ceil(m.HAscent + m.HDescent + m.HLineGap))
+	return ceil(m.HAscent + m.HDescent + m.HLineGap)
 }
 
-// textWidth is the width of a single line of text in pixels.
-func (th *Theme) textWidth(s string) int {
-	return int(math.Ceil(text.Advance(s, th.Face)))
-}
+// textWidth is the width of a single line in the theme's font.
+func (th *Theme) textWidth(s string) int { return advance(th.Face, s) }

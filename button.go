@@ -57,7 +57,7 @@ func (b *Button) draw(th *Theme, dst *ebiten.Image, st *drawState) {
 
 	x := b.rect.Min.X + Center.offset(b.rect.Dx(), th.textWidth(b.label))
 	y := b.rect.Min.Y + Center.offset(b.rect.Dy(), th.lineHeight())
-	drawString(dst, th, b.label, x, y, fg)
+	drawString(dst, th.Face, b.label, x, y, fg)
 }
 
 func (b *Button) hit(_ *Theme, p image.Point) clickable {
