@@ -7,6 +7,8 @@ A small UI package for [Ebitengine](https://ebitengine.org/) games, made for
 - **Rich text**: color or highlight single words, and make them clickable.
 - **Modals**: dialogs in the middle of the screen that take all input until
   they close.
+- **Text fields** that work with the platform's input method, so Japanese or
+  Chinese input and on-screen keyboards work too.
 
 ![A modal in the demo with mixed fonts, a highlighted word and a clickable one](docs/demo.png)
 
@@ -54,12 +56,26 @@ A clickable span without its own color uses the theme's `Link` color and is
 underlined while the pointer is over it. Keep a pointer to a span to change
 just that part, e.g. `amount.SetText("20")`.
 
+A text field in a modal, focused so the player can type straight away:
+
+```go
+name := ui.NewTextField("Your name").MaxLength(16)
+u.Open(ui.NewModal("Rename", name).
+	AddButton("Save", func() { player.Name = name.Text() }).
+	AddButton("Cancel", nil))
+u.Focus(name)
+```
+
+![Typing a name into a text field](docs/textfield.png)
+
 Hook it into your game:
 
 ```go
 func (g *Game) Update() error {
-	if g.ui.Update() {
-		return nil // the UI used this frame's input
+	used := g.ui.Update()
+	ebiten.SetCursorShape(g.ui.CursorShape())
+	if used || g.ui.Focused() != nil {
+		return nil // the UI used this frame's input, or the player is typing
 	}
 	g.gold.SetText(fmt.Sprintf("Gold: %d", g.coins))
 	// ... the rest of the game
@@ -76,9 +92,14 @@ func (g *Game) Layout(int, int) (int, int) {
 }
 ```
 
-`Update` returns true while a modal is open, or when a click landed on a panel,
-so the game knows to ignore it. `OverClickable` tells you when the pointer is
-over a button or clickable span, e.g. to show a hand cursor.
+`Update` returns true while a modal is open, when a click landed on a panel, or
+when a key went to a text field, so the game knows to ignore it. While
+`Focused()` is not nil the player is typing, so leave the keyboard alone.
+`CursorShape` gives the right mouse cursor: a text cursor over fields, a hand
+over buttons and clickable spans.
+
+If your game sends pointer events to the UI itself with `HandleInput`, call
+`UpdateKeys` once per frame as well, for typing and the Escape and Enter keys.
 
 ## Elements
 
@@ -91,6 +112,7 @@ over a button or clickable span, e.g. to show a hand cursor.
 | Panel | `NewPanel(children...)` | Background and border; children top to bottom. `Width`, `Padding`, `Gap`, `Align`. |
 | Column / Row | `Column(...)`, `Row(...)` | Layout without a box. `Gap`, `Width`, `Align`, `Justify`. |
 | Modal | `NewModal(title, children...)` | Open with `u.Open`. `AddButton`, `OnClose`, `Dismissible`, `Width`, `Close`. |
+| Text field | `NewTextField(placeholder)` | One line of typing. `SetText`, `Text`, `MaxLength`, `Width`, `OnChange`, `OnSubmit`. Focus with a click or `u.Focus`. |
 
 Every element has `SetVisible`, `Visible` and `Bounds`. Hidden elements take no
 space.
@@ -100,7 +122,13 @@ Anchors for `Place`: `TopLeft`, `Top`, `TopRight`, `Left`, `Middle`, `Right`,
 as a popup next to a character, call `PlaceAt(e, x, y)` every frame; it is
 kept on screen.
 
-Keys: **Escape** closes the top modal, **Enter** presses its first button.
+Keys:
+
+- **Escape** unfocuses a text field and closes the top modal.
+- **Enter** runs a focused field's `OnSubmit`; without one, it presses the top
+  modal's first button.
+- **Backspace**, **Delete**, **Left**, **Right**, **Home** and **End** edit a
+  focused field, repeating while held.
 
 ## Styling
 

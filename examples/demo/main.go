@@ -8,6 +8,7 @@ import (
 	"image/color"
 	"log"
 	"strconv"
+	"strings"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
@@ -37,6 +38,7 @@ func pixelFont(size float64) text.Face {
 type game struct {
 	ui   *ui.UI
 	gold *ui.Span
+	name *ui.Span
 	coin int
 }
 
@@ -50,7 +52,9 @@ func newGame() *game {
 
 	// A HUD panel; the gold amount is its own span so it can have a color.
 	g.gold = ui.NewSpan("0").Color(goldColor)
+	g.name = ui.NewSpan("Guts").Color(goldColor)
 	u.Place(ui.NewPanel(
+		ui.NewRichText(ui.NewSpan("Name: "), g.name),
 		ui.NewRichText(ui.NewSpan("Gold: "), g.gold),
 		ui.NewText("Day 1").Color(color.RGBA{0x9a, 0xc8, 0xff, 0xff}),
 	), ui.TopLeft, 8, 8)
@@ -58,6 +62,7 @@ func newGame() *game {
 	// A menu of buttons.
 	u.Place(ui.NewPanel(
 		ui.NewText("Menu").Font(pixelFont(8)).Align(ui.Center),
+		ui.NewButton("Rename", g.rename),
 		ui.NewButton("Show message", g.showNote),
 		ui.NewButton("Leave the cave", g.askToLeave),
 		ui.NewButton("Find gold", func() { g.coin += 10 }),
@@ -65,6 +70,23 @@ func newGame() *game {
 
 	u.Place(ui.NewText("Esc closes a modal, Enter presses its first button."), ui.Bottom, 0, 8)
 	return g
+}
+
+// rename asks for a new name in a text field. Enter presses Save, because
+// the field has no OnSubmit of its own.
+func (g *game) rename() {
+	field := ui.NewTextField("Your name").SetText(g.name.Text()).MaxLength(16)
+	g.ui.Open(ui.NewModal("Rename",
+		ui.NewText("What should they call you?"),
+		field,
+	).
+		AddButton("Save", func() {
+			if s := strings.TrimSpace(field.Text()); s != "" {
+				g.name.SetText(s)
+			}
+		}).
+		AddButton("Cancel", nil))
+	g.ui.Focus(field) // start typing straight away
 }
 
 // showNote shows rich text: a highlighted word and a clickable one.
@@ -90,15 +112,12 @@ func (g *game) askToLeave() {
 
 func (g *game) Update() error {
 	used := g.ui.Update()
-	if g.ui.OverClickable() {
-		ebiten.SetCursorShape(ebiten.CursorShapePointer)
-	} else {
-		ebiten.SetCursorShape(ebiten.CursorShapeDefault)
-	}
-	if used {
-		return nil // the UI used the input this frame
-	}
+	ebiten.SetCursorShape(g.ui.CursorShape())
 	g.gold.SetText(strconv.Itoa(g.coin))
+	if used || g.ui.Focused() != nil {
+		return nil // the UI has this frame's input, or the keyboard is busy typing
+	}
+	// ... the game's own input would go here.
 	return nil
 }
 

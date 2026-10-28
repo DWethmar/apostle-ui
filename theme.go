@@ -41,6 +41,12 @@ type Theme struct {
 	ButtonText       color.Color
 	ButtonDisabled   color.Color // label color of a disabled button
 
+	FieldWidth      int         // default width of a text field
+	FieldBackground color.Color // inside a text field
+	FieldBorder     color.Color // a text field's border
+	FieldFocus      color.Color // a focused text field's border
+	Placeholder     color.Color // a text field's hint while it is empty
+
 	// Backdrop is drawn over everything behind the top modal.
 	Backdrop color.Color
 }
@@ -70,6 +76,12 @@ func DefaultTheme() Theme {
 		ButtonSelected:   color.RGBA{0x4a, 0x78, 0x46, 0xff},
 		ButtonText:       color.RGBA{0xf0, 0xf0, 0xf0, 0xff},
 		ButtonDisabled:   color.RGBA{0x80, 0x80, 0x88, 0xff},
+
+		FieldWidth:      160,
+		FieldBackground: color.RGBA{0x12, 0x12, 0x16, 0xff},
+		FieldBorder:     color.RGBA{0x5a, 0x5a, 0x66, 0xff},
+		FieldFocus:      color.RGBA{0x7e, 0xc8, 0xff, 0xff},
+		Placeholder:     color.RGBA{0x70, 0x70, 0x7a, 0xff},
 
 		Backdrop: color.RGBA{0x00, 0x00, 0x00, 0x99},
 	}
