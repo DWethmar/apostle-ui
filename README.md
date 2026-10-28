@@ -1,7 +1,7 @@
 # apostle-ui
 
 A small UI package for [Ebitengine](https://ebitengine.org/) games, made for
-[Apostle](https://github.com/DWethmar/apostle). It does two things:
+[Apostle](https://github.com/DWethmar/apostle). It has:
 
 - **Panels** with text and buttons, placed on the screen (HUDs, menus).
 - **Rich text**: color or highlight single words, and make them clickable.
@@ -112,8 +112,7 @@ u.Theme.Title = color.RGBA{0xff, 0x80, 0x80, 0xff}
 
 ## Wrapping
 
-Ebitengine's `text/v2` does not wrap text; it only breaks lines at `
-`. This
+Ebitengine's `text/v2` does not wrap text; it only breaks lines at `\n`. This
 package wraps itself, greedily at spaces, measuring with `text.Advance`. That is
 right for languages that put spaces between words. Languages that don't
 (Chinese, Japanese, Thai) would need Unicode line breaking, which
