@@ -20,16 +20,99 @@ func click(u *UI, r image.Rectangle) bool {
 	return a || b
 }
 
-func TestWrapLines(t *testing.T) {
+// lineTexts lays out spans and returns each line's text.
+func lineTexts(th *Theme, maxW int, spans ...*Span) []string {
+	var out []string
+	for _, l := range layoutText(th, spans, maxW) {
+		var b strings.Builder
+		for _, r := range l.runs {
+			b.WriteString(r.text)
+		}
+		out = append(out, b.String())
+	}
+	return out
+}
+
+func TestLayoutWraps(t *testing.T) {
 	th := DefaultTheme()
 	w := th.textWidth("aaa bbb")
-	got := wrapLines(&th, "aaa bbb ccc\nddd", w)
+	got := lineTexts(&th, w, NewSpan("aaa   bbb ccc\nddd"))
 	want := []string{"aaa bbb", "ccc", "ddd"}
 	if strings.Join(got, "|") != strings.Join(want, "|") {
-		t.Fatalf("wrapLines = %q, want %q", got, want)
+		t.Fatalf("lines = %q, want %q", got, want)
 	}
-	if got := wrapLines(&th, "a b\nc", 0); len(got) != 2 {
+	if got := lineTexts(&th, 0, NewSpan("a b\nc")); len(got) != 2 {
 		t.Fatalf("no limit should only break at newlines, got %q", got)
+	}
+	if got := lineTexts(&th, 0, NewSpan("")); len(got) != 1 {
+		t.Fatalf("empty text should be one empty line, got %q", got)
+	}
+}
+
+func TestLayoutAcrossSpans(t *testing.T) {
+	th := DefaultTheme()
+	// "key" and "." are separate spans but one word: they must not split.
+	w := th.textWidth("a rusty key")
+	got := lineTexts(&th, w, NewSpan("a rusty "), NewSpan("key"), NewSpan("."))
+	want := []string{"a rusty", "key."}
+	if strings.Join(got, "|") != strings.Join(want, "|") {
+		t.Fatalf("lines = %q, want %q", got, want)
+	}
+
+	// Neighbouring pieces of one span merge into one run, spaces included.
+	key := NewSpan("rusty old key")
+	lines := layoutText(&th, []*Span{NewSpan("a "), key, NewSpan(" here")}, 0)
+	if n := len(lines[0].runs); n != 3 {
+		t.Fatalf("runs = %d, want 3 (plain, key, plain)", n)
+	}
+	if r := lines[0].runs[1]; r.span != key || r.text != "rusty old key" {
+		t.Fatalf("middle run = %q, want the whole key span", r.text)
+	}
+}
+
+func TestClickableSpan(t *testing.T) {
+	u := newTestUI()
+	n := 0
+	key := NewSpan("key").OnClick(func() { n++ })
+	txt := NewRichText(NewSpan("You found a "), key, NewSpan("."))
+	u.Place(NewPanel(txt), TopLeft, 0, 0)
+	u.HandleInput(Input{})
+
+	var keyRect image.Rectangle
+	for _, r := range txt.lines[0].runs {
+		if r.span == key {
+			keyRect = txt.runRect(&u.Theme, 0, r)
+		}
+	}
+	if keyRect.Empty() {
+		t.Fatal("key span was not laid out")
+	}
+
+	u.HandleInput(Input{Cursor: keyRect.Min.Add(image.Pt(1, 1))})
+	if !u.OverClickable() {
+		t.Error("pointer over the key should be over something clickable")
+	}
+	if !click(u, keyRect) || n != 1 {
+		t.Fatalf("clicking the span: clicks = %d, want 1", n)
+	}
+
+	// Plain words around it do nothing.
+	plain := image.Rect(txt.Bounds().Min.X, txt.Bounds().Min.Y, txt.Bounds().Min.X+4, txt.Bounds().Min.Y+4)
+	click(u, plain)
+	if n != 1 {
+		t.Fatal("clicking plain text fired the span")
+	}
+	u.HandleInput(Input{Cursor: plain.Min})
+	if u.OverClickable() {
+		t.Error("plain text should not count as clickable")
+	}
+}
+
+func TestSetTextOnRichText(t *testing.T) {
+	txt := NewRichText(NewSpan("a"), NewSpan("b").OnClick(func() {}))
+	txt.SetText("plain")
+	if len(txt.Spans()) != 1 || txt.Text() != "plain" || txt.Spans()[0].onClick != nil {
+		t.Fatalf("SetText should replace rich spans with one plain span, got %d spans", len(txt.Spans()))
 	}
 }
 

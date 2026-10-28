@@ -4,10 +4,11 @@ A small UI package for [Ebitengine](https://ebitengine.org/) games, made for
 [Apostle](https://github.com/DWethmar/apostle). It does two things:
 
 - **Panels** with text and buttons, placed on the screen (HUDs, menus).
+- **Rich text**: color or highlight single words, and make them clickable.
 - **Modals**: dialogs in the middle of the screen that take all input until
   they close.
 
-![A modal in the demo](docs/demo.png)
+![A modal in the demo with a highlighted word and a clickable one](docs/demo.png)
 
 ```sh
 go get github.com/dwethmar/apostle-ui
@@ -36,6 +37,23 @@ u.Open(ui.NewModal("Leave the cave?", ui.NewText("It is dark outside.")).
 	AddButton("Stay", nil))    // just closes
 ```
 
+Rich text is a `Text` made of spans. Each span can have its own color, a
+highlight behind it, and a click handler:
+
+```go
+u.Open(ui.NewModal("A note", ui.NewRichText(
+	ui.NewSpan("The "),
+	ui.NewSpan("eclipse").Color(red).Highlight(darkRed),
+	ui.NewSpan(" is coming. Look at the "),
+	ui.NewSpan("blood").OnClick(func() { u.Alert("Blood", "Still wet.") }),
+	ui.NewSpan("."),
+)).AddButton("OK", nil))
+```
+
+A clickable span without its own color uses the theme's `Link` color and is
+underlined while the pointer is over it. Keep a pointer to a span to change
+just that part, e.g. `amount.SetText("20")`.
+
 Hook it into your game:
 
 ```go
@@ -59,13 +77,16 @@ func (g *Game) Layout(int, int) (int, int) {
 ```
 
 `Update` returns true while a modal is open, or when a click landed on a panel,
-so the game knows to ignore it.
+so the game knows to ignore it. `OverClickable` tells you when the pointer is
+over a button or clickable span, e.g. to show a hand cursor.
 
 ## Elements
 
 | Element | Made with | Notes |
 |---|---|---|
 | Text | `NewText(s)` | Wraps to the width it is given. `SetText`, `Color`, `Align`. |
+| Rich text | `NewRichText(spans...)` | A `Text` made of spans. `SetSpans`, `Add`. |
+| Span | `NewSpan(s)` | Part of a rich text. `SetText`, `Color`, `Highlight`, `OnClick`. |
 | Button | `NewButton(label, fn)` | Fires on press + release over it. `SetLabel`, `SetDisabled`. |
 | Panel | `NewPanel(children...)` | Background and border; children top to bottom. `Width`, `Padding`, `Gap`, `Align`. |
 | Column / Row | `Column(...)`, `Row(...)` | Layout without a box. `Gap`, `Width`, `Align`, `Justify`. |
@@ -88,6 +109,15 @@ all colors. The default font is a 12px bitmap font. To use your own:
 u.Theme.Face = myFace // any text/v2 Face
 u.Theme.Title = color.RGBA{0xff, 0x80, 0x80, 0xff}
 ```
+
+## Wrapping
+
+Ebitengine's `text/v2` does not wrap text; it only breaks lines at `
+`. This
+package wraps itself, greedily at spaces, measuring with `text.Advance`. That is
+right for languages that put spaces between words. Languages that don't
+(Chinese, Japanese, Thai) would need Unicode line breaking, which
+`github.com/go-text/typesetting/segmenter` provides and could be swapped in.
 
 ## Testing
 

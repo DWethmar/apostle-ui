@@ -26,6 +26,9 @@ type Theme struct {
 	Text  color.Color // body text
 	Title color.Color // modal titles
 
+	Link      color.Color // clickable spans
+	LinkHover color.Color // clickable spans under the pointer
+
 	PanelBackground color.Color
 	PanelBorder     color.Color
 
@@ -51,6 +54,9 @@ func DefaultTheme() Theme {
 
 		Text:  color.RGBA{0xe6, 0xe6, 0xe6, 0xff},
 		Title: color.RGBA{0xf2, 0xc9, 0x4c, 0xff},
+
+		Link:      color.RGBA{0x7e, 0xc8, 0xff, 0xff},
+		LinkHover: color.RGBA{0xc4, 0xe6, 0xff, 0xff},
 
 		PanelBackground: color.RGBA{0x1e, 0x1e, 0x24, 0xf0},
 		PanelBorder:     color.RGBA{0x8a, 0x8a, 0x99, 0xff},

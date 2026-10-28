@@ -43,7 +43,7 @@ type UI struct {
 	modals  []*Modal
 	screen  image.Point
 	cursor  image.Point
-	pressed clickable // the element the current press started on
+	pressed clickable // what the current press started on
 }
 
 type placement struct {
@@ -134,7 +134,7 @@ func (u *UI) HandleInput(in Input) bool {
 				b.click()
 			}
 		default:
-			u.pointer(in, top.panel.hit)
+			u.pointer(in, func(p image.Point) clickable { return top.panel.hit(&u.Theme, p) })
 		}
 		return true
 	}
@@ -170,7 +170,7 @@ func (u *UI) hitPlaced(pt image.Point) clickable {
 		if el.base().hidden {
 			continue
 		}
-		if c := el.hit(pt); c != nil {
+		if c := el.hit(&u.Theme, pt); c != nil {
 			return c
 		}
 	}
@@ -205,6 +205,21 @@ func (u *UI) Draw(screen *ebiten.Image) {
 		}
 		m.panel.draw(th, screen, st)
 	}
+}
+
+// OverClickable reports whether the pointer is over something clickable that
+// is not covered by a modal, e.g. to show a hand cursor:
+//
+//	if g.ui.OverClickable() {
+//		ebiten.SetCursorShape(ebiten.CursorShapePointer)
+//	} else {
+//		ebiten.SetCursorShape(ebiten.CursorShapeDefault)
+//	}
+func (u *UI) OverClickable() bool {
+	if top := u.top(); top != nil {
+		return top.panel.hit(&u.Theme, u.cursor) != nil
+	}
+	return u.hitPlaced(u.cursor) != nil
 }
 
 func (u *UI) top() *Modal {

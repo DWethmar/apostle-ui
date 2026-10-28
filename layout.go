@@ -185,13 +185,13 @@ func (s *Stack) draw(th *Theme, dst *ebiten.Image, st *drawState) {
 	}
 }
 
-func (s *Stack) hit(p image.Point) clickable {
+func (s *Stack) hit(th *Theme, p image.Point) clickable {
 	for i := len(s.children) - 1; i >= 0; i-- {
 		c := s.children[i]
 		if c.base().hidden {
 			continue
 		}
-		if h := c.hit(p); h != nil {
+		if h := c.hit(th, p); h != nil {
 			return h
 		}
 	}
@@ -286,7 +286,7 @@ func (p *Panel) draw(th *Theme, dst *ebiten.Image, st *drawState) {
 	p.body.draw(th, dst, st)
 }
 
-func (p *Panel) hit(pt image.Point) clickable { return p.body.hit(pt) }
+func (p *Panel) hit(th *Theme, pt image.Point) clickable { return p.body.hit(th, pt) }
 
 func fillRect(dst *ebiten.Image, r image.Rectangle, c color.Color) {
 	vector.FillRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), c, false)

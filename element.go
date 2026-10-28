@@ -17,20 +17,19 @@ type Element interface {
 	// arrange gives the element its final screen rectangle.
 	arrange(th *Theme, r image.Rectangle)
 	draw(th *Theme, dst *ebiten.Image, st *drawState)
-	// hit returns the clickable element under p, or nil.
-	hit(p image.Point) clickable
+	// hit returns what is clickable under p (a Button or a Span), or nil.
+	hit(th *Theme, p image.Point) clickable
 }
 
-// clickable is an element that reacts to clicks, such as a Button.
+// clickable is something that reacts to clicks: a Button or a Span.
 type clickable interface {
-	Element
 	click()
 }
 
 // drawState is what drawing needs to know about the pointer.
 type drawState struct {
 	cursor  image.Point
-	pressed clickable // the element the current press started on
+	pressed clickable // what the current press started on
 }
 
 // node holds what every element shares. Its exported methods are available on
