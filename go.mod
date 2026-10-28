@@ -1,6 +1,6 @@
 module github.com/dwethmar/apostle-ui
 
-go 1.27.2
+go 1.27.3
 
 require (
 	github.com/hajimehoshi/bitmapfont/v4 v4.2.0
