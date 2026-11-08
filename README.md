@@ -111,7 +111,7 @@ If your game sends pointer events to the UI itself with `HandleInput`, call
 | Span | `NewSpan(s)` | Part of a rich text. `SetText`, `Color`, `Font`, `Highlight`, `OnClick`. |
 | Image | `NewImage(img)` | An `*ebiten.Image`, e.g. an icon in a `Row` next to text. `SetImage`, `Size(w, h)` to scale. Nil shows nothing. |
 | Button | `NewButton(label, fn)` | Fires on press + release over it. `SetLabel`, `SetDisabled`, `SetSelected` (e.g. the active tool). |
-| Panel | `NewPanel(children...)` | Background and border; children top to bottom. `Width`, `Padding`, `Gap`, `Align`. |
+| Panel | `NewPanel(children...)` | Background and border; children top to bottom. `Width`, `Padding`, `Gap`, `Align`, `Background`, `Border`, `Radius`, `BorderWidth`. |
 | Column / Row | `Column(...)`, `Row(...)` | Layout without a box. `Gap`, `Width`, `Align`, `Justify`. |
 | Modal | `NewModal(title, children...)` | Open with `u.Open`. `AddButton`, `OnClose`, `Dismissible`, `Width`, `Close`. |
 | Text field | `NewTextField(placeholder)` | One line of typing. `SetText`, `Text`, `MaxLength`, `Width`, `OnChange`, `OnSubmit`. Focus with a click or `u.Focus`. |
@@ -142,6 +142,19 @@ u.Theme.Face = myFace       // any text/v2 Face
 u.Theme.TitleFace = bigFace // modal titles (nil means Face)
 u.Theme.Title = color.RGBA{0xff, 0x80, 0x80, 0xff}
 ```
+
+Panels and modals are square with a 1px border by default. Round them, or give
+them a thicker border, for every panel or just one:
+
+```go
+u.Theme.PanelRadius = 6      // all panels and modals
+u.Theme.PanelBorderWidth = 2
+
+ui.NewPanel(gold).Radius(10).BorderWidth(3).Border(yellow) // just this one
+```
+
+The border is drawn inside the panel, over its padding, so it does not change
+the layout; keep `Padding` at least as wide as the border.
 
 Fonts can also be set per text, or per span for a single word:
 
