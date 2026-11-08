@@ -53,8 +53,9 @@ u.Open(ui.NewModal("A note", ui.NewRichText(
 ```
 
 A clickable span without its own color uses the theme's `Link` color and is
-underlined while the pointer is over it. Keep a pointer to a span to change
-just that part, e.g. `amount.SetText("20")`.
+underlined while the pointer is over it. A highlight leaves
+`Theme.HighlightPadding` pixels (3 by default) on each side of its text. Keep a
+pointer to a span to change just that part, e.g. `amount.SetText("20")`.
 
 A text field in a modal, focused so the player can type straight away:
 
@@ -108,6 +109,7 @@ If your game sends pointer events to the UI itself with `HandleInput`, call
 | Text | `NewText(s)` | Wraps to the width it is given. `SetText`, `Color`, `Font`, `Align`. |
 | Rich text | `NewRichText(spans...)` | A `Text` made of spans. `SetSpans`, `Add`. |
 | Span | `NewSpan(s)` | Part of a rich text. `SetText`, `Color`, `Font`, `Highlight`, `OnClick`. |
+| Image | `NewImage(img)` | An `*ebiten.Image`, e.g. an icon in a `Row` next to text. `SetImage`, `Size(w, h)` to scale. Nil shows nothing. |
 | Button | `NewButton(label, fn)` | Fires on press + release over it. `SetLabel`, `SetDisabled`, `SetSelected` (e.g. the active tool). |
 | Panel | `NewPanel(children...)` | Background and border; children top to bottom. `Width`, `Padding`, `Gap`, `Align`. |
 | Column / Row | `Column(...)`, `Row(...)` | Layout without a box. `Gap`, `Width`, `Align`, `Justify`. |

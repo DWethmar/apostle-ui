@@ -24,6 +24,9 @@ type Theme struct {
 	ButtonPaddingX, ButtonPaddingY int
 	// ModalWidth is the widest a modal grows before its text wraps.
 	ModalWidth int
+	// HighlightPadding is the room left and right of a span's highlight, so
+	// the color does not touch the text.
+	HighlightPadding int
 
 	Text  color.Color // body text
 	Title color.Color // modal titles
@@ -54,12 +57,13 @@ type Theme struct {
 // DefaultTheme is a dark theme using a 12px bitmap font.
 func DefaultTheme() Theme {
 	return Theme{
-		Face:           text.NewGoXFace(bitmapfont.Face),
-		Padding:        8,
-		Gap:            6,
-		ButtonPaddingX: 8,
-		ButtonPaddingY: 4,
-		ModalWidth:     280,
+		Face:             text.NewGoXFace(bitmapfont.Face),
+		Padding:          8,
+		Gap:              6,
+		HighlightPadding: 3,
+		ButtonPaddingX:   8,
+		ButtonPaddingY:   4,
+		ModalWidth:       280,
 
 		Text:  color.RGBA{0xe6, 0xe6, 0xe6, 0xff},
 		Title: color.RGBA{0xf2, 0xc9, 0x4c, 0xff},
