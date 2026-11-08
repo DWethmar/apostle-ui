@@ -89,6 +89,7 @@ type textRun struct {
 	face text.Face
 	text string
 	x, w int // offset from the line's start, and width
+	pad  int // room before the text, inside w (highlight padding)
 }
 
 // NewText creates plain text.
@@ -148,7 +149,7 @@ func (t *Text) defaultFace(th *Theme) text.Face {
 }
 
 func (t *Text) measure(th *Theme, maxW int) image.Point {
-	lines := layoutText(t.spans, t.defaultFace(th), maxW)
+	lines := layoutText(t.spans, t.defaultFace(th), maxW, th.HighlightPadding)
 	w, h := 0, 0
 	for _, l := range lines {
 		w = max(w, l.width)
@@ -159,7 +160,7 @@ func (t *Text) measure(th *Theme, maxW int) image.Point {
 
 func (t *Text) arrange(th *Theme, r image.Rectangle) {
 	t.rect = r
-	t.lines = layoutText(t.spans, t.defaultFace(th), r.Dx())
+	t.lines = layoutText(t.spans, t.defaultFace(th), r.Dx(), th.HighlightPadding)
 }
 
 // runRect is where a run sits on screen: its width, and the full line height.
@@ -185,7 +186,7 @@ func (t *Text) draw(th *Theme, dst *ebiten.Image, st *drawState) {
 			c := t.colorOf(th, run.span, run.span == hovered)
 			// Line every run up on the line's baseline.
 			y := r.Min.Y + line.baseline - ceil(run.face.Metrics().HAscent)
-			drawString(dst, run.face, run.text, r.Min.X, y, c)
+			drawString(dst, run.face, run.text, r.Min.X+run.pad, y, c)
 			if run.span == hovered {
 				uy := min(r.Min.Y+line.baseline+1, r.Max.Y-1)
 				fillRect(dst, image.Rect(r.Min.X, uy, r.Max.X, uy+1), c)
@@ -228,8 +229,10 @@ func (t *Text) hit(_ *Theme, p image.Point) clickable {
 // layoutText places spans into lines no wider than maxW pixels, breaking at
 // spaces and at "\n". maxW <= 0 means only break at "\n". A word wider than
 // maxW gets a line of its own and overflows. A word may cross spans, e.g.
-// "key" and "." stay together. def is the font for spans without one.
-func layoutText(spans []*Span, def text.Face, maxW int) []textLine {
+// "key" and "." stay together. def is the font for spans without one. pad is
+// extra room before and after each highlighted span, so the highlight does not
+// touch its text.
+func layoutText(spans []*Span, def text.Face, maxW, pad int) []textLine {
 	var (
 		lines []textLine
 		cur   textLine
@@ -274,6 +277,8 @@ func layoutText(spans []*Span, def text.Face, maxW int) []textLine {
 
 	for _, sp := range spans {
 		f := faceOf(sp)
+		padded := sp.highlight != nil && pad > 0
+		first := true // no piece of this span placed yet
 		for s := sp.text; len(s) > 0; {
 			switch s[0] {
 			case '\n':
@@ -291,10 +296,24 @@ func layoutText(spans []*Span, def text.Face, maxW int) []textLine {
 				if i < 0 {
 					i = len(s)
 				}
-				w := advance(f, s[:i])
-				word = append(word, textRun{span: sp, face: f, text: s[:i], w: w})
-				wordW += w
+				r := textRun{span: sp, face: f, text: s[:i], w: advance(f, s[:i])}
+				if padded && first {
+					r.pad = pad
+					r.w += pad
+				}
+				first = false
+				word = append(word, r)
+				wordW += r.w
 				s = s[i:]
+			}
+		}
+		if padded && !first { // room after the span's last piece
+			if n := len(word); n > 0 && word[n-1].span == sp {
+				word[n-1].w += pad
+				wordW += pad
+			} else if n := len(cur.runs); n > 0 && cur.runs[n-1].span == sp {
+				cur.runs[n-1].w += pad
+				x += pad
 			}
 		}
 	}

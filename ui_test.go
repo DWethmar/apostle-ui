@@ -3,6 +3,7 @@ package ui
 import (
 	"bytes"
 	"image"
+	"image/color"
 	"strings"
 	"testing"
 
@@ -27,7 +28,7 @@ func click(u *UI, r image.Rectangle) bool {
 // lineTexts lays out spans and returns each line's text.
 func lineTexts(th *Theme, maxW int, spans ...*Span) []string {
 	var out []string
-	for _, l := range layoutText(spans, th.Face, maxW) {
+	for _, l := range layoutText(spans, th.Face, maxW, 0) {
 		var b strings.Builder
 		for _, r := range l.runs {
 			b.WriteString(r.text)
@@ -65,12 +66,40 @@ func TestLayoutAcrossSpans(t *testing.T) {
 
 	// Neighbouring pieces of one span merge into one run, spaces included.
 	key := NewSpan("rusty old key")
-	lines := layoutText([]*Span{NewSpan("a "), key, NewSpan(" here")}, th.Face, 0)
+	lines := layoutText([]*Span{NewSpan("a "), key, NewSpan(" here")}, th.Face, 0, 0)
 	if n := len(lines[0].runs); n != 3 {
 		t.Fatalf("runs = %d, want 3 (plain, key, plain)", n)
 	}
 	if r := lines[0].runs[1]; r.span != key || r.text != "rusty old key" {
 		t.Fatalf("middle run = %q, want the whole key span", r.text)
+	}
+}
+
+func TestHighlightPadding(t *testing.T) {
+	th := DefaultTheme()
+	const pad = 4
+	for _, s := range []string{"key", "old key", "key "} { // one word, several, trailing space
+		hl := NewSpan(s).Highlight(color.Black)
+		lines := layoutText([]*Span{NewSpan("a "), hl, NewSpan(" b")}, th.Face, 0, pad)
+		var r textRun
+		for _, run := range lines[0].runs {
+			if run.span == hl && strings.TrimSpace(run.text) != "" {
+				r = run
+			}
+		}
+		// A trailing space belongs to the highlight, as it did before padding.
+		if want := th.textWidth(s) + 2*pad; r.w != want || r.pad != pad {
+			t.Errorf("%q: run width %d pad %d, want %d and %d", s, r.w, r.pad, want, pad)
+		}
+		last := lines[0].runs[len(lines[0].runs)-1]
+		if last.x < r.x+r.w {
+			t.Errorf("%q: text after the highlight starts at %d, inside it (ends %d)", s, last.x, r.x+r.w)
+		}
+	}
+	// No highlight, no padding.
+	plain := layoutText([]*Span{NewSpan("key")}, th.Face, 0, pad)
+	if r := plain[0].runs[0]; r.w != th.textWidth("key") || r.pad != 0 {
+		t.Errorf("plain span got padding: width %d pad %d", r.w, r.pad)
 	}
 }
 
@@ -351,7 +380,7 @@ func TestTextFont(t *testing.T) {
 func TestSpanFontSharesBaseline(t *testing.T) {
 	th := DefaultTheme()
 	big := bigFace(t)
-	lines := layoutText([]*Span{NewSpan("small "), NewSpan("BIG").Font(big), NewSpan(" small")}, th.Face, 0)
+	lines := layoutText([]*Span{NewSpan("small "), NewSpan("BIG").Font(big), NewSpan(" small")}, th.Face, 0, 0)
 	if len(lines) != 1 {
 		t.Fatalf("lines = %d, want 1", len(lines))
 	}
@@ -371,7 +400,7 @@ func TestSpanFontSharesBaseline(t *testing.T) {
 func TestLinesStackByTheirOwnHeight(t *testing.T) {
 	th := DefaultTheme()
 	big := bigFace(t)
-	lines := layoutText([]*Span{NewSpan("one\n"), NewSpan("TWO").Font(big), NewSpan("\nthree")}, th.Face, 0)
+	lines := layoutText([]*Span{NewSpan("one\n"), NewSpan("TWO").Font(big), NewSpan("\nthree")}, th.Face, 0, 0)
 	if len(lines) != 3 {
 		t.Fatalf("lines = %d, want 3", len(lines))
 	}
