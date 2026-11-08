@@ -205,13 +205,15 @@ type Panel struct {
 	body       *Stack
 	width      int
 	pad        int // < 0 means the theme's Padding
+	radius     int // < 0 means the theme's PanelRadius
+	borderW    int // < 0 means the theme's PanelBorderWidth
 	background color.Color
 	border     color.Color
 }
 
 // NewPanel creates a panel holding children top to bottom.
 func NewPanel(children ...Element) *Panel {
-	return &Panel{body: Column(children...), pad: -1}
+	return &Panel{body: Column(children...), pad: -1, radius: -1, borderW: -1}
 }
 
 // Add appends children.
@@ -242,11 +244,21 @@ func (p *Panel) Background(c color.Color) *Panel { p.background = c; return p }
 // Border sets the border color, overriding the theme.
 func (p *Panel) Border(c color.Color) *Panel { p.border = c; return p }
 
-func (p *Panel) padFor(th *Theme) int {
-	if p.pad < 0 {
-		return th.Padding
+// Radius rounds the panel's corners by n pixels, overriding the theme. 0 is square.
+func (p *Panel) Radius(n int) *Panel { p.radius = n; return p }
+
+// BorderWidth sets how thick the border is in pixels, overriding the theme. 0 draws
+// no border. The border is drawn inside the panel, over its padding.
+func (p *Panel) BorderWidth(n int) *Panel { p.borderW = n; return p }
+
+func (p *Panel) padFor(th *Theme) int { return orTheme(p.pad, th.Padding) }
+
+// orTheme is v, or the theme's value when v is unset (< 0).
+func orTheme(v, theme int) int {
+	if v < 0 {
+		return theme
 	}
-	return p.pad
+	return v
 }
 
 func (p *Panel) measure(th *Theme, maxW int) image.Point {
@@ -281,12 +293,55 @@ func (p *Panel) draw(th *Theme, dst *ebiten.Image, st *drawState) {
 	if border == nil {
 		border = th.PanelBorder
 	}
-	fillRect(dst, p.rect, bg)
-	strokeRect(dst, p.rect, border)
+	radius, bw := orTheme(p.radius, th.PanelRadius), orTheme(p.borderW, th.PanelBorderWidth)
+	if radius == 0 && bw <= 1 { // the plain box: pixel-exact, as before
+		fillRect(dst, p.rect, bg)
+		if bw == 1 {
+			strokeRect(dst, p.rect, border)
+		}
+	} else {
+		fillRoundRect(dst, p.rect, radius, bg)
+		if bw > 0 {
+			strokeRoundRect(dst, p.rect, radius, bw, border)
+		}
+	}
 	p.body.draw(th, dst, st)
 }
 
 func (p *Panel) hit(th *Theme, pt image.Point) clickable { return p.body.hit(th, pt) }
+
+// roundRect is a path around r inset by inset pixels, with corners of the given
+// radius, shrunk so it never exceeds half the shorter side.
+func roundRect(r image.Rectangle, radius, inset float32) *vector.Path {
+	x0, y0 := float32(r.Min.X)+inset, float32(r.Min.Y)+inset
+	x1, y1 := float32(r.Max.X)-inset, float32(r.Max.Y)-inset
+	rad := max(min(radius-inset, (x1-x0)/2, (y1-y0)/2), 0)
+	var p vector.Path
+	p.MoveTo(x0+rad, y0)
+	p.LineTo(x1-rad, y0)
+	p.ArcTo(x1, y0, x1, y0+rad, rad)
+	p.LineTo(x1, y1-rad)
+	p.ArcTo(x1, y1, x1-rad, y1, rad)
+	p.LineTo(x0+rad, y1)
+	p.ArcTo(x0, y1, x0, y1-rad, rad)
+	p.LineTo(x0, y0+rad)
+	p.ArcTo(x0, y0, x0+rad, y0, rad)
+	p.Close()
+	return &p
+}
+
+func fillRoundRect(dst *ebiten.Image, r image.Rectangle, radius int, c color.Color) {
+	op := &vector.DrawPathOptions{AntiAlias: true}
+	op.ColorScale.ScaleWithColor(c)
+	vector.FillPath(dst, roundRect(r, float32(radius), 0), nil, op)
+}
+
+// strokeRoundRect draws a border w pixels wide just inside r, following its rounded corners.
+func strokeRoundRect(dst *ebiten.Image, r image.Rectangle, radius, w int, c color.Color) {
+	op := &vector.DrawPathOptions{AntiAlias: true}
+	op.ColorScale.ScaleWithColor(c)
+	vector.StrokePath(dst, roundRect(r, float32(radius), float32(w)/2), &vector.StrokeOptions{Width: float32(w)}, op)
+}
 
 func fillRect(dst *ebiten.Image, r image.Rectangle, c color.Color) {
 	vector.FillRect(dst, float32(r.Min.X), float32(r.Min.Y), float32(r.Dx()), float32(r.Dy()), c, false)

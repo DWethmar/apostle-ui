@@ -36,6 +36,10 @@ type Theme struct {
 
 	PanelBackground color.Color
 	PanelBorder     color.Color
+	// PanelRadius rounds the corners of panels and modals, in pixels. 0 is square.
+	PanelRadius int
+	// PanelBorderWidth is how thick panel and modal borders are, in pixels. 0 draws none.
+	PanelBorderWidth int
 
 	ButtonBackground color.Color
 	ButtonHover      color.Color
@@ -64,6 +68,7 @@ func DefaultTheme() Theme {
 		ButtonPaddingX:   8,
 		ButtonPaddingY:   4,
 		ModalWidth:       280,
+		PanelBorderWidth: 1,
 
 		Text:  color.RGBA{0xe6, 0xe6, 0xe6, 0xff},
 		Title: color.RGBA{0xf2, 0xc9, 0x4c, 0xff},
