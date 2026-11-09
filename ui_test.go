@@ -463,3 +463,24 @@ func TestSelectedButtonStillClicks(t *testing.T) {
 		t.Fatalf("selected = %v, clicks = %d", b.Selected(), n)
 	}
 }
+
+// A raised button is ButtonDepth taller, and a press anywhere on it, edge included, clicks it.
+func TestButtonDepth(t *testing.T) {
+	flat, raised := newTestUI(), newTestUI()
+	raised.Theme.ButtonDepth = 4
+	n := 0
+	fb, rb := NewButton("Go", nil), NewButton("Go", func() { n++ })
+	flat.Place(fb, TopLeft, 0, 0)
+	raised.Place(rb, TopLeft, 0, 0)
+	flat.HandleInput(Input{})
+	raised.HandleInput(Input{})
+	if got, want := rb.Bounds().Dy(), fb.Bounds().Dy()+4; got != want {
+		t.Fatalf("raised button is %d tall, want %d", got, want)
+	}
+	edge := image.Pt(rb.Bounds().Min.X+2, rb.Bounds().Max.Y-1)
+	raised.HandleInput(Input{Cursor: edge, Pressed: true})
+	raised.HandleInput(Input{Cursor: edge, Released: true})
+	if n != 1 {
+		t.Fatalf("pressing the edge clicked %d times, want 1", n)
+	}
+}

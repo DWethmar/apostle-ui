@@ -2,6 +2,7 @@ package ui
 
 import (
 	"image"
+	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -43,7 +44,7 @@ func (b *Button) Disabled() bool { return b.disabled }
 func (b *Button) measure(th *Theme, _ int) image.Point {
 	return image.Pt(
 		th.textWidth(b.label)+2*th.ButtonPaddingX,
-		th.lineHeight()+2*th.ButtonPaddingY,
+		th.lineHeight()+2*th.ButtonPaddingY+th.ButtonDepth,
 	)
 }
 
@@ -51,23 +52,49 @@ func (b *Button) arrange(_ *Theme, r image.Rectangle) { b.rect = r }
 
 func (b *Button) draw(th *Theme, dst *ebiten.Image, st *drawState) {
 	hover := st.cursor.In(b.rect)
+	pressed := hover && st.pressed == b && !b.disabled
 	bg, fg := th.ButtonBackground, th.ButtonText
 	switch {
 	case b.disabled:
 		fg = th.ButtonDisabled
-	case hover && st.pressed == b:
+	case pressed:
 		bg = th.ButtonPressed
 	case b.selected:
 		bg = th.ButtonSelected
 	case hover:
 		bg = th.ButtonHover
 	}
-	fillRect(dst, b.rect, bg)
-	strokeRect(dst, b.rect, th.PanelBorder)
+	// A raised button's face sits ButtonDepth above its edge; pressed, it sinks onto the
+	// edge, leaving a gap above it.
+	face := b.rect
+	if d := th.ButtonDepth; d > 0 {
+		edge := image.Rect(face.Min.X, face.Min.Y+d, face.Max.X, face.Max.Y)
+		th.buttonShape(dst, edge, th.ButtonEdge)
+		face.Max.Y -= d
+		if pressed {
+			face = face.Add(image.Pt(0, d))
+		}
+	}
+	th.buttonShape(dst, face, bg)
 
-	x := b.rect.Min.X + Center.offset(b.rect.Dx(), th.textWidth(b.label))
-	y := b.rect.Min.Y + Center.offset(b.rect.Dy(), th.lineHeight())
+	x := face.Min.X + Center.offset(face.Dx(), th.textWidth(b.label))
+	y := face.Min.Y + Center.offset(face.Dy(), th.lineHeight())
 	drawString(dst, th.Face, b.label, x, y, fg)
+}
+
+// buttonShape fills r in c, with the theme's button corners and border.
+func (th *Theme) buttonShape(dst *ebiten.Image, r image.Rectangle, c color.Color) {
+	if th.ButtonRadius > 0 {
+		fillRoundRect(dst, r, th.ButtonRadius, c)
+		if th.ButtonBorder != nil {
+			strokeRoundRect(dst, r, th.ButtonRadius, 1, th.ButtonBorder)
+		}
+		return
+	}
+	fillRect(dst, r, c)
+	if th.ButtonBorder != nil {
+		strokeRect(dst, r, th.ButtonBorder)
+	}
 }
 
 func (b *Button) hit(_ *Theme, p image.Point) clickable {

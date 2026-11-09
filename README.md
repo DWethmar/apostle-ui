@@ -156,6 +156,17 @@ ui.NewPanel(gold).Radius(10).BorderWidth(3).Border(yellow) // just this one
 The border is drawn inside the panel, over its padding, so it does not change
 the layout; keep `Padding` at least as wide as the border.
 
+Buttons are flat by default. Give them depth and they stand on a darker edge,
+sinking onto it while pressed:
+
+```go
+u.Theme.ButtonDepth = 4 // pixels; the button grows this much taller
+u.Theme.ButtonEdge = color.RGBA{0x10, 0x40, 0x2c, 0xff}
+```
+
+Buttons have a 1px border in `ButtonBorder` (nil for none) and square corners;
+`ButtonRadius` rounds them.
+
 Fonts can also be set per text, or per span for a single word:
 
 ```go

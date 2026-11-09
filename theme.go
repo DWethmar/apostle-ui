@@ -47,6 +47,14 @@ type Theme struct {
 	ButtonSelected   color.Color // a button marked with SetSelected
 	ButtonText       color.Color
 	ButtonDisabled   color.Color // label color of a disabled button
+	// ButtonDepth raises buttons: the face sits this many pixels above a ButtonEdge
+	// strip, and sinks onto it while pressed. 0 is flat.
+	ButtonDepth int
+	ButtonEdge  color.Color // the side of a raised button, below its face
+	// ButtonBorder outlines buttons; nil draws none.
+	ButtonBorder color.Color
+	// ButtonRadius rounds the corners of buttons, in pixels. 0 is square.
+	ButtonRadius int
 
 	FieldWidth      int         // default width of a text field
 	FieldBackground color.Color // inside a text field
@@ -85,6 +93,8 @@ func DefaultTheme() Theme {
 		ButtonSelected:   color.RGBA{0x4a, 0x78, 0x46, 0xff},
 		ButtonText:       color.RGBA{0xf0, 0xf0, 0xf0, 0xff},
 		ButtonDisabled:   color.RGBA{0x80, 0x80, 0x88, 0xff},
+		ButtonEdge:       color.RGBA{0x1c, 0x1c, 0x22, 0xff},
+		ButtonBorder:     color.RGBA{0x8a, 0x8a, 0x99, 0xff},
 
 		FieldWidth:      160,
 		FieldBackground: color.RGBA{0x12, 0x12, 0x16, 0xff},
