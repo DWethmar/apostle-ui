@@ -106,7 +106,7 @@ If your game sends pointer events to the UI itself with `HandleInput`, call
 
 | Element | Made with | Notes |
 |---|---|---|
-| Text | `NewText(s)` | Wraps to the width it is given. `SetText`, `Color`, `Font`, `Align`. |
+| Text | `NewText(s)` | Wraps to the width it is given. `SetText`, `Color`, `Font`, `Align`, `Shadow`. |
 | Rich text | `NewRichText(spans...)` | A `Text` made of spans. `SetSpans`, `Add`. |
 | Span | `NewSpan(s)` | Part of a rich text. `SetText`, `Color`, `Font`, `Highlight`, `OnClick`. |
 | Image | `NewImage(img)` | An `*ebiten.Image`, e.g. an icon in a `Row` next to text. `SetImage`, `Size(w, h)` to scale. Nil shows nothing. |
@@ -152,6 +152,10 @@ u.Theme.PanelBorderWidth = 2
 
 ui.NewPanel(gold).Radius(10).BorderWidth(3).Border(yellow) // just this one
 ```
+
+`Theme.PanelBorderShade` and `Theme.PanelBorderShine` give a rounded border in the
+theme's `PanelBorder` colour depth, like piping lit from above: the shade a pixel
+lower and wider, the shine a thin line along its top.
 
 The border is drawn inside the panel, over its padding, so it does not change
 the layout; keep `Padding` at least as wide as the border.

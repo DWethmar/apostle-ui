@@ -40,6 +40,11 @@ type Theme struct {
 	PanelRadius int
 	// PanelBorderWidth is how thick panel and modal borders are, in pixels. 0 draws none.
 	PanelBorderWidth int
+	// PanelBorderShade and PanelBorderShine give a rounded border depth, like piping lit
+	// from above: the shade a pixel lower and wider, the shine a thin line along its top.
+	// nil draws neither, and so does a panel whose border is another colour.
+	PanelBorderShade color.Color
+	PanelBorderShine color.Color
 
 	ButtonBackground color.Color
 	ButtonHover      color.Color

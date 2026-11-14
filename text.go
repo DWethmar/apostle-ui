@@ -71,6 +71,9 @@ type Text struct {
 	align Align
 	title bool // a modal title: uses the theme's Title color and TitleFace
 
+	shadow             color.Color // nil means none
+	shadowDX, shadowDY int
+
 	lines []textLine // set by arrange
 }
 
@@ -133,6 +136,14 @@ func (t *Text) Color(c color.Color) *Text { t.color = c; return t }
 // the theme.
 func (t *Text) Font(f text.Face) *Text { t.face = f; return t }
 
+// Shadow draws a copy of the text in color c behind it, dx pixels right and dy
+// down, so it stays readable on a busy background. Highlighted spans get none:
+// their highlight already sets them off. A nil color draws none.
+func (t *Text) Shadow(c color.Color, dx, dy int) *Text {
+	t.shadow, t.shadowDX, t.shadowDY = c, dx, dy
+	return t
+}
+
 // Align sets how lines are aligned horizontally: Start, Center or End.
 func (t *Text) Align(a Align) *Text { t.align = a; return t }
 
@@ -186,6 +197,9 @@ func (t *Text) draw(th *Theme, dst *ebiten.Image, st *drawState) {
 			c := t.colorOf(th, run.span, run.span == hovered)
 			// Line every run up on the line's baseline.
 			y := r.Min.Y + line.baseline - ceil(run.face.Metrics().HAscent)
+			if t.shadow != nil && run.span.highlight == nil {
+				drawString(dst, run.face, run.text, r.Min.X+run.pad+t.shadowDX, y+t.shadowDY, t.shadow)
+			}
 			drawString(dst, run.face, run.text, r.Min.X+run.pad, y, c)
 			if run.span == hovered {
 				uy := min(r.Min.Y+line.baseline+1, r.Max.Y-1)

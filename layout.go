@@ -302,7 +302,11 @@ func (p *Panel) draw(th *Theme, dst *ebiten.Image, st *drawState) {
 	} else {
 		fillRoundRect(dst, p.rect, radius, bg)
 		if bw > 0 {
-			strokeRoundRect(dst, p.rect, radius, bw, border)
+			shade, shine := th.PanelBorderShade, th.PanelBorderShine
+			if border != th.PanelBorder { // the depth is made for the theme's border colour
+				shade, shine = nil, nil
+			}
+			strokeBevel(dst, p.rect, radius, bw, border, shade, shine)
 		}
 	}
 	p.body.draw(th, dst, st)
@@ -341,6 +345,28 @@ func strokeRoundRect(dst *ebiten.Image, r image.Rectangle, radius, w int, c colo
 	op := &vector.DrawPathOptions{AntiAlias: true}
 	op.ColorScale.ScaleWithColor(c)
 	vector.StrokePath(dst, roundRect(r, float32(radius), float32(w)/2), &vector.StrokeOptions{Width: float32(w)}, op)
+}
+
+// strokeBevel is strokeRoundRect with depth: a shade under it and a shine along its top,
+// each left out when nil.
+func strokeBevel(dst *ebiten.Image, r image.Rectangle, radius, w int, c, shade, shine color.Color) {
+	path := roundRect(r, float32(radius), float32(w)/2)
+	stroke := func(dy, width float32, c color.Color) {
+		if c == nil {
+			return
+		}
+		var p vector.Path
+		o := &vector.AddPathOptions{}
+		o.GeoM.Translate(0, float64(dy))
+		p.AddPath(path, o)
+		op := &vector.DrawPathOptions{AntiAlias: true}
+		op.ColorScale.ScaleWithColor(c)
+		vector.StrokePath(dst, &p, &vector.StrokeOptions{Width: width}, op)
+	}
+	fw := float32(w)
+	stroke(1.5, fw+1.5, shade)
+	stroke(0, fw, c)
+	stroke(-fw/4, max(1, fw*0.4), shine)
 }
 
 func fillRect(dst *ebiten.Image, r image.Rectangle, c color.Color) {
